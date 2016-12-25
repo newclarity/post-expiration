@@ -1,0 +1,7 @@
+{
+    "name"       : "newclarity/post-expiration",
+    "description": "Adds post expiration to post types",
+    "homepage"   : "https://github.com/newclarity/post-expiration",
+    "type"       : "wordpress-plugin",
+    "license"    : "GPL-2.0+"
+}
