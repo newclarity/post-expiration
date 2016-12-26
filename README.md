@@ -2,22 +2,28 @@
 
 A simple post expiration plugin designed for use with no administrator options, or to be used and modified by a PHP developer. 
 
-## Admin Interface
-This plugin has no admin user configuration. Simply activate this plugin and it is ready for use. 
-
 ## End-user Interface
-On post types that support expiration an _"Expires:"_ label with an Edit link will appear in the Publish metabox.  Clicking the link will reveal an _"Expires On:"_ date field with a jQuery UI Datepicker and a _"On Expiration:"_ select field that has the options for epirations _(see next section.)_
+On post types that support expiration an _"Expires:"_ label with an Edit link will appear in the Publish metabox.  Clicking the link will reveal an _"Expires On:"_ date field with a jQuery UI Datepicker and a _"On Expiration:"_ select field that has the options for epirations _(see [_On Expiration_](#on-expiration) section.)_
+
+![](screenshots/expiration-controls.png)
     
 The Publish metabox does not let the user directly set the _"Expired"_ status, but when a post is expired the status will appear in the Publish metabox's status select list. 
 
+![](screenshots/expired-in-publish-metabox.png)
+
 In addition, all expired posts will be listed on the post list page in the admin as a selectable status archive.    
+
+![](screenshots/expired-posts-list.png)
+
+## Admin Interface
+This plugin has no admin user configuration. Simply activate this plugin and it is ready for use. 
 
 ## On Expiration
 On expiration posts can be transitioned in one of the following ways:
 
 1. Status set to _"Expired"_
 2. Status set to _"Draft"_
-3. Post moved to trash
+3. Post moved to Trash
 
 These transitions are implemented using `wp_update_post()` so all its hooks will be available during transition.     
 
