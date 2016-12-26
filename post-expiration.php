@@ -477,7 +477,7 @@ HTML;
 			}
 
 			/*
-			 * Set $expiration to be used in expiration-control.php.
+			 * Set $expiration to be used in expiration-controls.php.
 			 */
 			$expiration = ! empty( $post->ID )
 				? array(
@@ -493,7 +493,7 @@ HTML;
 				break;
 			}
 
-			$template_file = apply_filters( 'post_expiration_controls_template', __DIR__ . '/expiration-control.php', $expiration );
+			$template_file = apply_filters( 'post_expiration_controls_template', __DIR__ . '/expiration-controls.php', $expiration );
 
 			if ( empty( $template_file ) ) {
 				break;
