@@ -18,11 +18,11 @@
 			<input type="text" name="post_expiration[expiration_date]" id="post-expiration-date" value="<?php esc_attr_e( $expiration[ 'expiration_date' ] ); ?>" placeholder="<?php esc_attr_e( 'Select Date', 'post-expiration' ); ?>">
 		</p>
 		<p>
-			<label for="post-expiration-action"><?php esc_html_e( 'On Expire:', 'post-expiration' ); ?></label>
-			<select name="post_expiration[expires_action]" id="post-expiration-action">
-				<option <?php selected( 'set_to_expired', $expiration[ 'expires_action' ] ); ?> value="set_to_expired"><?php esc_html_e( 'Set Status to Expired', 'post-expiration' ); ?></option>
-				<option <?php selected( 'set_to_draft', $expiration[ 'expires_action' ] ); ?> value="set_to_draft"><?php esc_html_e( 'Set Status to Draft', 'post-expiration' ); ?></option>
-				<option <?php selected( 'trash_post',   $expiration[ 'expires_action' ] ); ?> value="trash_post"  ><?php esc_html_e( 'Trash Post',   'post-expiration' ); ?></option>
+			<label for="post-expiration-method"><?php esc_html_e( 'On Expiration:', 'post-expiration' ); ?></label>
+			<select name="post_expiration[expire_method]" id="post-expiration-method">
+				<option <?php selected( 'set_to_expired', $expiration[ 'expire_method' ] ); ?> value="set_to_expired"><?php esc_html_e( 'Set Status to Expired', 'post-expiration' ); ?></option>
+				<option <?php selected( 'set_to_draft', $expiration[ 'expire_method' ] ); ?> value="set_to_draft"><?php esc_html_e( 'Set Status to Draft', 'post-expiration' ); ?></option>
+				<option <?php selected( 'trash_post',   $expiration[ 'expire_method' ] ); ?> value="trash_post"  ><?php esc_html_e( 'Move Post to Trash',   'post-expiration' ); ?></option>
 			</select>
 		</p>
 		<p>
