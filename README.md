@@ -1,6 +1,6 @@
 # Post Expiration
 
-A simple post expiration plugin designed for simple use with no options, or to be used and modified by a PHP developer. 
+A simple post expiration plugin designed for use with no administrator options, or to be used and modified by a PHP developer. 
 
 ## Admin Interface
 This plugin has no admin user configuration. Simply activate this plugin and it is ready for use. 
