@@ -3,7 +3,7 @@
 /*
 Plugin Name: Post Expiration
 Description: A post expiration plugin designed for WordPress sitebuilders to love.
-Version:     1.0a
+Version:     1.1
 Author:      NewClarity Consulting LLC
 License:     GPL2
 */
@@ -87,6 +87,10 @@ class Post_Expiration {
 	function _plugins_loaded_9() {
 
 		do {
+
+			if ( ! defined( 'POST_EXPIRATION_TEST_MODE' ) ) {
+				define( 'POST_EXPIRATION_TEST_MODE', true );
+			}
 
 			$this->_plugin_url = plugin_dir_url( __FILE__ );
 
@@ -176,8 +180,8 @@ class Post_Expiration {
 
 		$expire_date = $this->storage_formatted_current_date();
 
+		if ( POST_EXPIRATION_TEST_MODE || $this->last_date_expired() < $expire_date ) {
 
-		if ( $this->last_date_expired() < $expire_date ) {
 			/**
 			 * Using raw SQL here because WordPress does not have an API that does
 			 * what we need.  We could have used WP_Meta_Query but it would have
