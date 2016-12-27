@@ -113,7 +113,16 @@ class Post_Expiration {
 			 */
 			add_action( self::EXPIRE_ACTION, array( $this, '_expire_posts' ) );
 
+			if ( POST_EXPIRATION_TEST_MODE ) {
+				wp_clear_scheduled_hook( self::EXPIRE_ACTION );
+			}
+
 			if ( ! wp_next_scheduled( self::EXPIRE_ACTION ) ) {
+
+				$utc_timestamp = POST_EXPIRATION_TEST_MODE
+					? $this->next_midnights_utc_timestamp()
+					:  strtotime( gmdate( 'DATE_ATOM' ) );
+
 
 				wp_schedule_single_event( $utc_timestamp, self::EXPIRE_ACTION );
 
@@ -841,6 +850,37 @@ HTML;
 	 */
 	function delete_expire_method( $post_id ) {
 		return delete_post_meta( $post_id, '_post_expiration_method' );
+	}
+
+	/**
+	 * Get the next midnight's timestamp for our timezone.
+	 *
+	 * @return int
+	 */
+	function next_midnights_utc_timestamp() {
+
+
+		/*
+		 * Get difference between our timezone and the server's time zone
+		 *
+		 * If we are 9pm EST and the server is 6pm PST then so delta = +3 hours
+		 */
+		$timezone_delta = current_time( 'timestamp' ) - time();
+
+		/*
+		 * Get $today's timestamp at the first second of they day.
+		 */
+		$today = strtotime( date( 'Y-m-d', current_time( 'timestamp' ) ) );
+
+		/*
+		 * Add one day to it and adjust for timezone.
+		 *
+		 *  86,400 = 24 hours * 60 minutes * 60 seconds.
+		 */
+		$timestamp = $today + 86400 - $timezone_delta;
+
+		return $timestamp;
+
 	}
 
 }
