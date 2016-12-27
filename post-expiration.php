@@ -39,6 +39,11 @@ class Post_Expiration {
 	const STORAGE_FORMAT = 'Y-m-d';
 
 	/**
+	 * Action hook name for expiration cron task
+	 */
+	const EXPIRE_ACTION = 'post_expiration_expire_posts';
+
+	/**
 	 * @var Post_Expiration Store single instance of self.
 	 */
 	private static $_instance;
@@ -106,11 +111,11 @@ class Post_Expiration {
 			/**
 			 * Set up expiration for cron
 			 */
-			add_action( 'post_expiration_expire_posts', array( $this, '_expire_posts' ) );
+			add_action( self::EXPIRE_ACTION, array( $this, '_expire_posts' ) );
 
-			if( ! wp_next_scheduled( 'post_expiration_expire_posts' ) ) {
+			if ( ! wp_next_scheduled( self::EXPIRE_ACTION ) ) {
 
-				wp_schedule_single_event( time()+60, 'post_expiration_expire_posts' );
+				wp_schedule_single_event( $utc_timestamp, self::EXPIRE_ACTION );
 
 			}
 
