@@ -161,50 +161,21 @@ class Post_Expiration {
 	}
 
 	/**
-	 * Get the last date that posts were expired
-	 */
-	function last_date_expired() {
-
-		$settings = $this->settings();
-		return $settings[ 'last_date_expired' ];
-
-	}
-
-	/**
-	 * Update settings to include last date expired.
-	 *
-	 * Called when _expire_posts() determines we've crossed a date boundry and it is time to expire posts.
-	 *
-	 * @param string $last_date_expired
-	 */
-	function update_date_expired( $last_date_expired ) {
-
-		$settings = $this->settings();
-
-		$settings[ 'last_date_expired' ] = $last_date_expired;
-
-		$this->update_settings( $settings );
-
-	}
-
-	/**
 	 * Cron task to expire posts
 	 */
 	function _expire_posts() {
 
 		$expire_date = $this->storage_formatted_current_date();
 
-		if ( POST_EXPIRATION_TEST_MODE || $this->last_date_expired() < $expire_date ) {
+		/**
+		 * Using raw SQL here because WordPress does not have an API that does
+		 * what we need.  We could have used WP_Meta_Query but it would have
+		 * added complexity and yet we'd still need raw SQL so better to
+		 * stick with clear raw SQL.
+		 */
 
-			/**
-			 * Using raw SQL here because WordPress does not have an API that does
-			 * what we need.  We could have used WP_Meta_Query but it would have
-			 * added complexity and yet we'd still need raw SQL so better to
-			 * stick with clear raw SQL.
-			 */
-
-			global $wpdb;
-			$sql      = <<<SQL
+		global $wpdb;
+		$sql      = <<<SQL
 SELECT
 	post_id
 FROM
@@ -214,24 +185,18 @@ WHERE 1=1
 	AND meta_value IS NOT NULL 
 	AND meta_value < '%s'
 SQL;
-			$sql      = $wpdb->prepare( $sql, $expire_date );
-			$post_ids = $wpdb->get_col( $sql );
-			$post_ids = apply_filters( 'pre_post_expiration_posts', $post_ids, $expire_date );
-			foreach ( $post_ids as $post_id ) {
-				if ( ! apply_filters( 'do_post_expiration', true, $post_id, $expire_date ) ) {
-					continue;
-				}
-				$this->expire_post( $post_id );
-				do_action( 'post_expiration_post_expired', $post_id, $expire_date );
+		$sql      = $wpdb->prepare( $sql, $expire_date );
+		$post_ids = $wpdb->get_col( $sql );
+		$post_ids = apply_filters( 'pre_post_expiration_posts', $post_ids, $expire_date );
+		foreach ( $post_ids as $post_id ) {
+			if ( ! apply_filters( 'do_post_expiration', true, $post_id, $expire_date ) ) {
+				continue;
 			}
-			do_action( 'post_expiration_posts_expired', $post_ids, $expire_date );
-
-			/**
-			 * Now set a marker so that we don't run the above code 60*24 each day.
-			 */
-			$this->update_date_expired( $expire_date );
-
+			$this->expire_post( $post_id );
+			do_action( 'post_expiration_post_expired', $post_id, $expire_date );
 		}
+		do_action( 'post_expiration_posts_expired', $post_ids, $expire_date );
+
 	}
 
 	/**
@@ -383,7 +348,6 @@ HTML;
 	function default_settings() {
 		return array(
 			'expire_method'     => 'set_to_expired',
-			'last_date_expired' => null
 		);
 	}
 
