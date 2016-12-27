@@ -3,7 +3,7 @@
 /*
 Plugin Name: Post Expiration
 Description: A post expiration plugin designed for WordPress sitebuilders to love.
-Version:     1.0
+Version:     1.0a
 Author:      NewClarity Consulting LLC
 License:     GPL2
 */
@@ -74,7 +74,9 @@ class Post_Expiration {
 	 * @return Post_Expiration
 	 */
 	static function instance() {
+
 		return self::$_instance;
+
 	}
 
 	/**
@@ -89,30 +91,37 @@ class Post_Expiration {
 			$this->_plugin_url = plugin_dir_url( __FILE__ );
 
 			register_post_status( 'expired', array(
-				'label'       => _x( 'Expired', 'post status' ),
-				'public'      => false,
-				'show_in_admin_all_list' => false,
+				'label'                     => _x( 'Expired', 'post status' ),
+				'public'                    => false,
+				'show_in_admin_all_list'    => false,
 				'show_in_admin_status_list' => true,
-				'publicly_queryable' => false,
-				'label_count' => _n_noop( 'Expired <span class="count">(%s)</span>', 'Expired <span class="count">(%s)</span>' ),
+				'publicly_queryable'        => false,
+				'label_count'               => _n_noop( 'Expired <span class="count">(%s)</span>', 'Expired <span class="count">(%s)</span>' ),
 			));
 
 			/**
 			 * Set up expiration for cron
 			 */
 			add_action( 'post_expiration_expire_posts', array( $this, '_expire_posts' ) );
+
 			if( ! wp_next_scheduled( 'post_expiration_expire_posts' ) ) {
-				wp_schedule_single_event( time(), 'post_expiration_expire_posts' );
+
+				wp_schedule_single_event( time()+60, 'post_expiration_expire_posts' );
+
 			}
 
 			if ( ! current_user_can( 'edit_posts' ) ) {
+
 				break;
+
 			}
 
 			add_action( 'save_post',                    array( $this, '_save_post' ) );
 
 			if ( ! $this->is_post_edit_page() ) {
+
 				break;
+
 			}
 
 			add_action( 'admin_enqueue_scripts',        array( $this, '_admin_enqueue_scripts' ) );
@@ -128,7 +137,9 @@ class Post_Expiration {
 	 * Start queuing HTML so we can add Expired as a status in 'post_submitbox_misc_actions'
 	 */
 	function _post_submitbox_minor_actions() {
+
 		ob_start();
+
 	}
 
 	/**
@@ -163,9 +174,16 @@ class Post_Expiration {
 	 */
 	function _expire_posts() {
 
-		$expire_date = date( self::STORAGE_FORMAT, current_time( 'timestamp' ) );
+		$expire_date = $this->storage_formatted_current_date();
+
 
 		if ( $this->last_date_expired() < $expire_date ) {
+			/**
+			 * Using raw SQL here because WordPress does not have an API that does
+			 * what we need.  We could have used WP_Meta_Query but it would have
+			 * added complexity and yet we'd still need raw SQL so better to
+			 * stick with clear raw SQL.
+			 */
 
 			global $wpdb;
 			$sql      = <<<SQL
@@ -206,6 +224,7 @@ SQL;
 	function expire_post( $post_id ) {
 
 		do {
+
 			if ( ! $this->needs_expiration( $post_id ) ) {
 				break;
 			}
@@ -274,14 +293,13 @@ HTML;
 			wp_enqueue_script( 'jquery-ui-datepicker' );
 			wp_enqueue_script( 'post-expiration-js', "{$this->_plugin_url}/post-expiration.js", array( 'jquery-ui-datepicker' ) );
 			wp_localize_script( 'post-expiration-js', 'postExpiration', array(
-				'dateFormat' => apply_filters( 'post_expiration_display_format_js', self::DISPLAY_FORMAT_JS ),
-				'postStatus' => isset( $post->post_status ) ? $post->post_status : null,
-				'postStatusText' => __( 'Expired', 'post-expiration' ),
+				'dateFormat'      => apply_filters( 'post_expiration_display_format_js', self::DISPLAY_FORMAT_JS ),
+				'postStatus'      => isset( $post->post_status ) ? $post->post_status : null,
+				'postStatusLabel' => __( 'Expired', 'post-expiration' ),
 			));
 		}
 
 	}
-
 
 	/**
 	 * Convenience function to test if the current admin page is post.php or post-new.php.
@@ -294,7 +312,6 @@ HTML;
 		global $pagenow;
 		return preg_match( '#^post(-new)?\.php$#', $pagenow );
 	}
-
 
 	/**
 	 * Get the post types that support expiration.
@@ -391,7 +408,9 @@ HTML;
 	 * @return string
 	 */
 	function update_settings( $settings ) {
+
 		update_option( self::SETTINGS_NAME, $settings );
+
 	}
 
 	/**
@@ -424,7 +443,7 @@ HTML;
 
 		return array(
 			'expires_label'   => $this->get_expiration_label( $post_id ),
-			'expiration_date' => $this->get_expiration_date( $post_id ),
+			'expiration_date' => $this->get_display_formatted_date( $post_id ),
 			'expire_method'   => $this->get_expire_method( $post_id ),
 		);
 
@@ -480,11 +499,7 @@ HTML;
 			 * Set $expiration to be used in expiration-controls.php.
 			 */
 			$expiration = ! empty( $post->ID )
-				? array(
-					'expires_label'   => $this->get_expiration_label( $post->ID ),
-					'expiration_date' => $this->get_expiration_date( $post->ID ),
-					'expire_method'  => $this->get_expire_method( $post->ID ),
-				)
+				? $this->get_post_settings( $post->ID )
 				: $this->default_post_settings();
 
 			$expiration = apply_filters( 'post_expiration_data', $expiration );
@@ -565,15 +580,15 @@ HTML;
 
 			if ( $expiration[ 'expiration_date' ] && $expiration[ 'expire_method' ] ) {
 
-				$expiration_date = date( 'Y-m-d', strtotime( $expiration[ 'expiration_date' ] ) );
-				$this->update_expiration_date( $post_id, $expiration_date );
-				$this->update_expire_method( $post_id, $expire_method = $expiration[ 'expire_method' ] );
+				$expire_method = $expiration[ 'expire_method' ];
+				$this->update_expire_method( $post_id, $expire_method );
+				$this->update_expiration_date( $post_id, $expiration[ 'expiration_date' ] );
 
 			} else {
 
-				$this->delete_expiration_date( $post_id );
-				$this->delete_expire_method( $post_id );
 				$expire_method = null;
+				$this->delete_expire_method( $post_id );
+				$this->delete_expiration_date( $post_id );
 
 			}
 
@@ -599,17 +614,13 @@ HTML;
 
 			$is_expired = false;
 
-			$expiration_date = $this->get_expiration_date( $post_id );
+			$expiration_datestamp = $this->get_expiration_datestamp( $post_id );
 
-			if ( empty( $expiration_date ) ) {
+			if ( 0 === $expiration_datestamp ) {
 				break;
 			}
 
-			if ( current_time( 'timestamp' )  < strtotime( $expiration_date ) ) {
-				break;
-			}
-
-			$is_expired =  true;
+			$is_expired = current_time( 'timestamp' ) >= $expiration_datestamp;
 
 		} while ( false );
 
@@ -649,7 +660,10 @@ HTML;
 	 * @param string $expiration_date
 	 */
 	function update_expiration_date( $post_id, $expiration_date ) {
+
+		$expiration_date = date( self::STORAGE_FORMAT, strtotime( $expiration_date ) );
 		update_post_meta( $post_id, '_post_expiration_date', $expiration_date );
+
 	}
 
 	/**
@@ -676,13 +690,13 @@ HTML;
 				break;
 			}
 
-			$expires = $this->get_expiration_date( $post_id );
+			$display_date = $this->get_display_formatted_date( $post_id );
 
-			if ( empty( $expires ) ) {
+			if ( empty( $display_date ) ) {
 				break;
 			}
 
-			$label = $expires;
+			$label = $display_date;
 
 		} while ( false );
 
@@ -691,15 +705,70 @@ HTML;
 	}
 
 	/**
-	 * @param int|null $post_id
+	 * @param int $post_id
 	 *
 	 * @return string
 	 */
-	function get_expiration_date( $post_id = null ) {
+	function get_storage_formatted_date( $post_id ) {
+
+		return date( self::STORAGE_FORMAT, $this->get_expiration_datestamp( $post_id ) );
+
+	}
+
+
+	/**
+	 * @return string
+	 */
+	function storage_formatted_current_date() {
+
+		return date( self::STORAGE_FORMAT, current_time( 'timestamp' ) );
+
+	}
+
+
+	/**
+	 * @param int $post_id
+	 *
+	 * @return string
+	 */
+	function get_display_formatted_date( $post_id ) {
 
 		do {
 
-			$expiration_date = '';
+			$display_date = '';
+
+			$datestamp = $this->get_expiration_datestamp( $post_id );
+
+			if ( is_null( $datestamp ) ) {
+				break;
+			}
+
+			$display_format = apply_filters( 'post_expiration_display_format', self::DISPLAY_FORMAT );
+
+			if ( empty( $display_format ) ) {
+				break;
+			}
+
+			$display_date = date( $display_format, $datestamp );
+
+		} while ( false );
+
+		return $display_date;
+
+	}
+
+	/**
+	 * Return a timestamp for just the date part for the specified post
+	 *
+	 * @param int $post_id
+	 *
+	 * @return int|null
+	 */
+	function get_expiration_datestamp( $post_id ) {
+
+		do {
+
+			$datestamp = null;
 
 			if ( is_null( $post_id ) ) {
 				break;
@@ -711,23 +780,21 @@ HTML;
 				break;
 			}
 
-			$expiration_date = date(
-				apply_filters( 'post_expiration_display_format', self::DISPLAY_FORMAT ),
-				strtotime( $value )
-			);
+			$datestamp = strtotime( date( self::STORAGE_FORMAT, strtotime( $value ) ) );
 
 		} while ( false );
 
-		return $expiration_date;
+		return $datestamp;
 
 	}
 
 	/**
-	 * @param int|null $post_id
+	 * @param int $post_id
 	 *
 	 * @return string
 	 */
-	function get_expire_method( $post_id = null ) {
+	function get_expire_method( $post_id ) {
+
 		do {
 
 			$expire_method = $this->preferred_expire_method();
