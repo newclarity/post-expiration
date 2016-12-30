@@ -3,7 +3,7 @@
 /*
 Plugin Name: Post Expiration
 Description: A post expiration plugin designed for WordPress sitebuilders to love.
-Version:     1.1
+Version:     1.1b
 Author:      NewClarity Consulting LLC
 License:     GPL2
 */
@@ -120,8 +120,8 @@ class Post_Expiration {
 			if ( ! wp_next_scheduled( self::EXPIRE_ACTION ) ) {
 
 				$utc_timestamp = POST_EXPIRATION_TEST_MODE
-					? $this->next_midnights_utc_timestamp()
-					:  strtotime( gmdate( 'DATE_ATOM' ) );
+					? strtotime( gmdate( DATE_ATOM ) )
+					: $this->next_midnights_utc_timestamp();
 
 
 				wp_schedule_single_event( $utc_timestamp, self::EXPIRE_ACTION );
@@ -134,7 +134,7 @@ class Post_Expiration {
 
 			}
 
-			add_action( 'save_post',                    array( $this, '_save_post' ) );
+			add_action( 'save_post', array( $this, '_save_post' ) );
 
 			if ( ! $this->is_post_edit_page() ) {
 
