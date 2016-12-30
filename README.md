@@ -62,15 +62,15 @@ Provides expiration by date (no time) using either WordPress pseudo-cron, or man
 
 It uses the timezone set in General Settings to determine the date. More specfically it gets "now" using `current_time( 'timestamp' )`.
 
-### TEST MODE / PRODUCTION MODE
+### TEST MODE
 **By default** the expiration process runs continuously; every page load will schedule yet another run of the expiration process.  Obviously this **bad practice** because is adds unnecessary load to your server, however I found that **when the plugin only ran cron once per day people would try the plugin, test it and assume it was not working!** 
 
 Thus, to follow the [**Principle of Least Astonishment**](https://en.wikipedia.org/wiki/Principle_of_least_astonishment) this plugin **defaults to easy testing**. However, for production use **you should always set the following constant** in your `/wp-config.php` site configuration file:
 
-    define( 'POST_EXPIRATION_TEST_MODE', false );
+    define( 'POST_EXPIRATION_PRODUCTION_MODE', true );
 
 
-When `POST_EXPIRATION_TEST_MODE` is set cron will schedule to run only once per day which is as it should be.
+When `POST_EXPIRATION_PRODUCTION_MODE` is set to `true` cron will schedule to run only once per day which is as it should be.
 
    
 ## Composer Support

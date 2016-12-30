@@ -3,7 +3,7 @@
 /*
 Plugin Name: Post Expiration
 Description: A post expiration plugin designed for WordPress sitebuilders to love.
-Version:     1.1b
+Version:     1.2
 Author:      NewClarity Consulting LLC
 License:     GPL2
 */
@@ -54,6 +54,11 @@ class Post_Expiration {
 	private $_plugin_url;
 
 	/**
+	 * @var string Is the plugin running in TEST mode?
+	 */
+	private $_is_test_mode = false;
+
+	/**
 	 * Capture singleton instance
 	 */
 	static function on_load() {
@@ -93,8 +98,8 @@ class Post_Expiration {
 
 		do {
 
-			if ( ! defined( 'POST_EXPIRATION_TEST_MODE' ) ) {
-				define( 'POST_EXPIRATION_TEST_MODE', true );
+			if ( ! defined( 'POST_EXPIRATION_PRODUCTION_MODE' ) ) {
+				define( 'POST_EXPIRATION_PRODUCTION_MODE', false );
 			}
 
 			$this->_plugin_url = plugin_dir_url( __FILE__ );
@@ -113,18 +118,37 @@ class Post_Expiration {
 			 */
 			add_action( self::EXPIRE_ACTION, array( $this, '_expire_posts' ) );
 
-			if ( POST_EXPIRATION_TEST_MODE ) {
+			if ( ! POST_EXPIRATION_PRODUCTION_MODE ) {
+
 				wp_clear_scheduled_hook( self::EXPIRE_ACTION );
+
+				/**
+				 * Flag used in `admin_notices` to display a wanting if in test mode.
+				 */
+				$this->_is_test_mode = true;
+
+				/*
+				 * This is definitely no something you want to do in production.
+				 * BUT we do is so that people who try testing the plugin don't
+				 * immediately think (and report) "That is doesn't work!"
+				 *
+				 * If we do not do this then there is a 60 second delay between
+				 * the times people test it.
+				 */
+				delete_transient( 'doing_cron' );
+
 			}
 
 			if ( ! wp_next_scheduled( self::EXPIRE_ACTION ) ) {
 
-				$utc_timestamp = POST_EXPIRATION_TEST_MODE
-					? strtotime( gmdate( DATE_ATOM ) )
-					: $this->next_midnights_utc_timestamp();
+				$utc_timestamp = POST_EXPIRATION_PRODUCTION_MODE
+					? $this->next_midnights_utc_timestamp()
+					: microtime( true );
 
-
-				wp_schedule_single_event( $utc_timestamp, self::EXPIRE_ACTION );
+				/*
+				 * Schedule it 1 second early to avoid weirdness like we saw on WPEngine.
+				 */
+				wp_schedule_single_event( $utc_timestamp - 1, self::EXPIRE_ACTION );
 
 			}
 
@@ -135,6 +159,7 @@ class Post_Expiration {
 			}
 
 			add_action( 'save_post', array( $this, '_save_post' ) );
+			add_action( 'admin_notices',                array( $this, '_admin_notices' ) );
 
 			if ( ! $this->is_post_edit_page() ) {
 
@@ -150,7 +175,6 @@ class Post_Expiration {
 		} while ( false );
 
 	}
-
 	/**
 	 * Start queuing HTML so we can add Expired as a status in 'post_submitbox_misc_actions'
 	 */
@@ -844,6 +868,26 @@ HTML;
 		$timestamp = $today + 86400 - $timezone_delta;
 
 		return $timestamp;
+
+	}
+
+	/**
+	 * Start queuing HTML so we can add Expired as a status in 'post_submitbox_misc_actions'
+	 */
+	function _admin_notices() {
+
+		if ( $this->_is_test_mode ) {
+			$url = 'https://github.com/newclarity/post-expiration/tree/master#test-mode';
+			$message = array(
+				sprintf( __( '<p>You are currently running the <strong>Post Expiration</strong> plugin in <a href="%s" target="_blank"><strong>TEST</strong> mode</a>.</p>', 'post-expiration' ), $url ),
+				__( '<p>You should <strong>not</strong> use this mode in production. Instead you should add the following to the top of your <code>/wp-config.php</code> file:</p>', 'post-expiration' ),
+				__( "<code class='example'>define( 'POST_EXPIRATION_PRODUCTION_MODE', true );</code>", 'post-expiration' ),
+			);
+			echo '<div class="error notice"><style type="text/css">h2,p {font-size:1.25em;} code.example {display:block; margin:1em; padding:2em;}</style>';
+			echo __( '<h2>IMPORTANT</h2>', 'post-expiration' );
+			echo implode( ' ', $message );
+			echo '</div>';
+		}
 
 	}
 
